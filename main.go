@@ -95,7 +95,6 @@ func Save(path string, object interface{}) error {
 		encoder := gob.NewEncoder(file)
 		encoder.Encode(object)
 	}
-	fmt.Printf("Encoded info: %+v\n", object)
 	file.Close()
 	return err
 }
@@ -105,7 +104,6 @@ func Load(path string, o interface{}) error {
 		dec := gob.NewDecoder(file)
 		err = dec.Decode(o)
 	}
-	fmt.Printf("Decoded info: %+v\n", o)
 	file.Close()
 	return err
 }

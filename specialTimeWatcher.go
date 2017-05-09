@@ -68,7 +68,6 @@ func checkSpecialTimes(old SpecialTime, toSend chan toBeSent) SpecialTime {
 	for id, times := range g.timeSubs {
 		if len(times) == 0 {
 			// No subscriptions for this person
-			println("No subscriptions")
 			continue
 		}
 		for _, t := range times {

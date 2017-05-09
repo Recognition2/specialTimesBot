@@ -178,12 +178,12 @@ func convToSpTime(s string) (SpecialTime, error) {
 
 	hr, err := strconv.Atoi(arr[0])
 	if err != nil {
-		return SpecialTime{}, err
+		return SpecialTime{}, errors.New("This is not a number")
 	}
 
 	min, err := strconv.Atoi(arr[1])
 	if err != nil {
-		return SpecialTime{}, err
+		return SpecialTime{}, errors.New("This is not a number")
 	}
 
 	if hr > 23 || hr < 0 {
