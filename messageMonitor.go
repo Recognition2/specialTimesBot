@@ -172,7 +172,7 @@ func convToSpTime(s string) (SpecialTime, error) {
 		return SpecialTime{}, errors.New("Contains too many \":\"'s")
 	}
 	if len(arr) < 2 {
-		return SpecialTime{}, errors.New("Time is missing")
+		return SpecialTime{}, errors.New("Time is missing. Please provide a time in the form '/add 22:35'")
 
 	}
 
