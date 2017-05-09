@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/gob"
-	"fmt"
 	"github.com/BurntSushi/toml"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
 	"log"
