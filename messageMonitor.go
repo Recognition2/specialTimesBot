@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
@@ -65,8 +66,22 @@ func handleMessage(m *tgbotapi.Message) {
 		handleHelp(m)
 	case "hi":
 		handleHi(m)
-
+	case "list":
+		handleList(m)
 	}
+}
+
+func handleList(m *tgbotapi.Message) {
+	g.timeSubsLock.RLock()
+	defer g.timeSubsLock.RUnlock()
+
+	var b bytes.Buffer
+	b.WriteString("This chat is currently subscribed to these times:\n")
+
+	for _, j := range g.timeSubs[m.Chat.ID] {
+		b.WriteString(fmt.Sprintf("%02d:%02d\n", j.Hours, j.Minutes))
+	}
+	g.bot.Send(tgbotapi.NewMessage(m.Chat.ID, b.String()))
 }
 
 func handleHelp(m *tgbotapi.Message) {
@@ -80,9 +95,10 @@ func handleHi(m *tgbotapi.Message) {
 }
 
 func handleAddSpecialTime(message *tgbotapi.Message) {
-	sID := message.Chat.ID
 	g.timeSubsLock.Lock() // A time needs to be added, so lock the object for writing
 	defer g.timeSubsLock.Unlock()
+
+	sID := message.Chat.ID
 
 	t, err := convToSpTime(message.CommandArguments())
 	if err != nil {
@@ -90,7 +106,7 @@ func handleAddSpecialTime(message *tgbotapi.Message) {
 		return
 	}
 
-	if spTimeExists(sID, t) != 0 {
+	if spTimeExists(sID, t) != -1 {
 		g.bot.Send(tgbotapi.NewMessage(sID, "Time already exists!"))
 		return
 	}
@@ -102,10 +118,7 @@ func handleAddSpecialTime(message *tgbotapi.Message) {
 	g.bot.Send(msg)
 }
 
-func spTimeExists(id int64, t specialTime) int {
-	g.timeSubsLock.RLock()
-	defer g.timeSubsLock.RUnlock()
-
+func spTimeExists(id int64, t SpecialTime) int {
 	for k, v := range g.timeSubs[id] {
 		if v.isEqualMinute(t) {
 			return k
@@ -152,35 +165,35 @@ func handleClearSpecialTime(message *tgbotapi.Message) {
 	g.bot.Send(msg)
 }
 
-func convToSpTime(s string) (specialTime, error) {
+func convToSpTime(s string) (SpecialTime, error) {
 	// This string must be of the format "21:30" or something
 	arr := strings.Split(s, ":")
 	if len(arr) > 3 {
-		return specialTime{}, errors.New("Contains too many \":\"'s")
+		return SpecialTime{}, errors.New("Contains too many \":\"'s")
 	}
 	if len(arr) < 2 {
-		return specialTime{}, errors.New("Time is missing")
+		return SpecialTime{}, errors.New("Time is missing")
 
 	}
 
 	hr, err := strconv.Atoi(arr[0])
 	if err != nil {
-		return specialTime{}, err
+		return SpecialTime{}, err
 	}
 
 	min, err := strconv.Atoi(arr[1])
 	if err != nil {
-		return specialTime{}, err
+		return SpecialTime{}, err
 	}
 
 	if hr > 23 || hr < 0 {
-		return specialTime{}, errors.New("Not a valid hour")
+		return SpecialTime{}, errors.New("Not a valid hour")
 	}
 
 	if min > 59 || min < 0 {
-		return specialTime{}, errors.New("Not a valid minute")
+		return SpecialTime{}, errors.New("Not a valid minute")
 	}
-	return specialTime{uint8(hr), uint8(min), 0}, nil
+	return SpecialTime{uint8(hr), uint8(min), 0}, nil
 }
 
 func handleGetID(cmd *tgbotapi.Message) {

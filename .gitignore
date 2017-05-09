@@ -28,3 +28,4 @@ settings.toml
 .idea/
 specialTimesBot.iml
 *~
+data.gob

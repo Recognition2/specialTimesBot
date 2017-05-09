@@ -14,11 +14,11 @@ func specialTimeWatcher() {
 	toSend := make(chan toBeSent, 200) // Send queue can contain 200 messages at maximum
 	go messageSender(toSend)
 
-	var old specialTime
+	var old SpecialTime
 
 outer:
 	for {
-		n := 10 * time.Second // Check whether people are to be notified every n seconds
+		n := 1 * time.Second // Check whether people are to be notified every n seconds
 		t := time.After(n)
 		select {
 		case <-g.shutdown:
@@ -43,19 +43,24 @@ outer:
 	}
 }
 
-func sendSpecialTime(id int64, t specialTime) {
-	text := "Hi! It's currently %d:%d:%d, and I just wanted to make sure you knew, too!"
-	msg := tgbotapi.NewMessage(id, fmt.Sprintf(text, t.hours, t.minutes, t.seconds))
+func sendSpecialTime(id int64, t SpecialTime) {
+	text := "Hi! It's currently %02d:%02d, and I just wanted to make sure you knew, too!"
+	msg := tgbotapi.NewMessage(id, fmt.Sprintf(text, t.Hours, t.Minutes))
 	g.bot.Send(msg)
 }
 
-func checkSpecialTimes(old specialTime, toSend chan toBeSent) specialTime {
+func checkSpecialTimes(old SpecialTime, toSend chan toBeSent) SpecialTime {
 	// Create special time from the current time
 	cTime := time.Now()
-	var current specialTime
-	current.hours = uint8(cTime.Hour())
-	current.minutes = uint8(cTime.Minute())
-	current.seconds = uint8(cTime.Second())
+	var current SpecialTime
+	current.Hours = uint8(cTime.Hour())
+	current.Minutes = uint8(cTime.Minute())
+	current.Seconds = uint8(cTime.Second())
+
+	if current.Seconds < 10 {
+		// We're not enough into this minute yet, wait a little longer
+		return old
+	}
 
 	g.timeSubsLock.RLock()
 	defer g.timeSubsLock.RUnlock()
@@ -63,16 +68,12 @@ func checkSpecialTimes(old specialTime, toSend chan toBeSent) specialTime {
 	for id, times := range g.timeSubs {
 		if len(times) == 0 {
 			// No subscriptions for this person
+			println("No subscriptions")
 			continue
 		}
 		for _, t := range times {
 			if !current.isEqualMinute(t) {
 				// The current time is not special to this person
-				continue
-			}
-
-			if current.seconds < 15 {
-				// Skip this iteration, too close to 0 seconds
 				continue
 			}
 

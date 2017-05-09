@@ -10,7 +10,7 @@ type global struct {
 	shutdown     chan bool               // To make sure everything can shut down
 	bot          *tgbotapi.BotAPI        // The actual bot
 	c            config                  // Configuration file
-	timeSubs     map[int64][]specialTime // Mapping of people to an array of times
+	timeSubs     map[int64][]SpecialTime // Mapping of people to an array of times
 	timeSubsLock *sync.RWMutex           // Lock of this map
 }
 
@@ -19,17 +19,17 @@ type config struct {
 	Admins []int  // Bot admins
 }
 
-type specialTime struct {
-	hours   uint8
-	minutes uint8
-	seconds uint8
+type SpecialTime struct {
+	Hours   uint8
+	Minutes uint8
+	Seconds uint8
 }
 
 type toBeSent struct {
 	id   int64
-	time specialTime
+	time SpecialTime
 }
 
-func (t specialTime) isEqualMinute(o specialTime) bool {
-	return t.minutes == o.minutes && t.hours == o.hours
+func (t SpecialTime) isEqualMinute(o SpecialTime) bool {
+	return t.Minutes == o.Minutes && t.Hours == o.Hours
 }

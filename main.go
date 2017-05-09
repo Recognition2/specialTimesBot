@@ -1,13 +1,14 @@
 package main
 
 import (
+	"encoding/gob"
+	"fmt"
+	"github.com/BurntSushi/toml"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
 	"log"
 	"os"
-	"sync"
-
-	"github.com/BurntSushi/toml"
 	"os/signal"
+	"sync"
 	"syscall"
 )
 
@@ -15,7 +16,8 @@ var (
 	logErr  = log.New(os.Stderr, "[ERRO] ", log.Ldate+log.Ltime+log.Ltime+log.Lshortfile)
 	logWarn = log.New(os.Stdout, "[WARN] ", log.Ldate+log.Ltime)
 	logInfo = log.New(os.Stdout, "[INFO] ", log.Ldate+log.Ltime)
-	g       = global{shutdown: make(chan bool)}
+	g       = global{shutdown: make(chan bool),
+		timeSubs: make(map[int64][]SpecialTime)}
 )
 
 func main() {
@@ -45,9 +47,11 @@ func main() {
 	var timeSubsLock sync.RWMutex
 	g.timeSubsLock = &timeSubsLock
 
-	// Create subscriptions object
-	var timeSubs map[int64][]specialTime
-	g.timeSubs = timeSubs
+	// Fill subscriptions object
+	err = Load("data.gob", &g.timeSubs)
+	if err != nil {
+		logErr.Println(err)
+	}
 
 	// All messages are received by the messageMonitor
 	wg.Add(1)
@@ -55,6 +59,9 @@ func main() {
 
 	wg.Add(1)
 	go specialTimeWatcher()
+
+	wg.Add(1)
+	go dataSaver()
 
 	//
 	// Perform other startup tasks
@@ -80,4 +87,25 @@ func main() {
 	// Shutdown after all goroutines have exited
 	g.wg.Wait()
 	logWarn.Println("Shutting down")
+}
+
+func Save(path string, object interface{}) error {
+	file, err := os.Create(path)
+	if err == nil {
+		encoder := gob.NewEncoder(file)
+		encoder.Encode(object)
+	}
+	fmt.Printf("Encoded info: %+v\n", object)
+	file.Close()
+	return err
+}
+func Load(path string, o interface{}) error {
+	file, err := os.Open(path)
+	if err == nil {
+		dec := gob.NewDecoder(file)
+		err = dec.Decode(o)
+	}
+	fmt.Printf("Decoded info: %+v\n", o)
+	file.Close()
+	return err
 }
