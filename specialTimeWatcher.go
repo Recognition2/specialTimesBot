@@ -44,7 +44,7 @@ outer:
 }
 
 func sendSpecialTime(id int64, t SpecialTime) {
-	text := "Hi! It's currently %02d:%02d, and I just wanted to make sure you knew, too!"
+	text := "It's currently %d:%02d"
 	msg := tgbotapi.NewMessage(id, fmt.Sprintf(text, t.Hours, t.Minutes))
 	g.bot.Send(msg)
 }

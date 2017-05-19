@@ -76,7 +76,15 @@ func handleList(m *tgbotapi.Message) {
 	defer g.timeSubsLock.RUnlock()
 
 	var b bytes.Buffer
-	b.WriteString("This chat is currently subscribed to these times:\n")
+
+	switch len(g.timeSubs[m.Chat.ID]) {
+	case 0:
+		b.WriteString("This chat is currently not subscribed to any times  :(\n")
+	case 1:
+		b.WriteString("This chat is currently not subscribed to this time: \n")
+	default:
+		b.WriteString("This chat is currently subscribed to these times:\n")
+	}
 
 	for _, j := range g.timeSubs[m.Chat.ID] {
 		b.WriteString(fmt.Sprintf("%02d:%02d\n", j.Hours, j.Minutes))
@@ -111,7 +119,22 @@ func handleAddSpecialTime(message *tgbotapi.Message) {
 		return
 	}
 
-	g.timeSubs[message.Chat.ID] = append(g.timeSubs[sID], t)
+	// Where to insert:
+	i := len(g.timeSubs[sID])
+	for k, v := range g.timeSubs[sID] {
+		if (v.Hours > t.Hours) || (v.Hours == t.Hours && v.Minutes > t.Minutes) {
+			i = k
+			break
+		}
+		if k == len(g.timeSubs[sID]) {
+			i = k
+			break
+		}
+	}
+
+	g.timeSubs[sID] = append(g.timeSubs[sID], SpecialTime{})
+	copy(g.timeSubs[sID][i+1:], g.timeSubs[sID][i:])
+	g.timeSubs[sID][i] = t
 
 	msg := tgbotapi.NewMessage(sID, "Time has been added successfully")
 	msg.ReplyToMessageID = message.MessageID
