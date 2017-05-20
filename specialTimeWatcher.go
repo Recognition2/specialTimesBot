@@ -1,11 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
-	"time"
 	"os/exec"
-	"bytes"
+	"time"
 )
 
 func specialTimeWatcher() {
@@ -78,10 +78,9 @@ func checkSpecialTimes(old SpecialTime, toSend chan toBeSent) SpecialTime {
 		for _, t := range times {
 			// Iterate over all times per person
 			//if t.Hours > current.Hours {
-				// We're too far along in the array already
+			// We're too far along in the array already
 			//	break
 			//}
-
 
 			if !current.isEqualMinute(t) {
 				// The current time is not special to this person
@@ -89,7 +88,7 @@ func checkSpecialTimes(old SpecialTime, toSend chan toBeSent) SpecialTime {
 			}
 
 			toSend <- toBeSent{id: id, time: current}
-			break;
+			break
 		}
 	}
 
@@ -98,20 +97,20 @@ func checkSpecialTimes(old SpecialTime, toSend chan toBeSent) SpecialTime {
 		logErr.Printf("Took %f seconds to loop through entire array ", d.Seconds())
 		// Sending the bot admin a warning message will probably not help
 		// if the bot is rate limited. However, try it anyway
-		for _,v := range(g.c.Admins) {
+		for _, v := range g.c.Admins {
 			g.bot.Send(tgbotapi.NewMessage(v, "Checking all subscriptions took too long"))
 		}
 	}
 
 	// Check whether admins want an update
-	if current.Minutes % 30 == 0 && current.Hours > 6 {
+	if current.Minutes%30 == 0 && current.Hours > 6 {
 		// Send an update half an hour, except during the night
-		uptime, err:= exec.Command("uptime", "-p").Output()
+		uptime, err := exec.Command("uptime", "-p").Output()
 		if err != nil {
 			logErr.Println(err)
 		}
 
-		cmd := `grep MemTotal /proc/meminfo | awk '{print $2}' | xargs -I {} echo "scale=4; {}/1024^2" | bc`
+		cmd := `grep MemFree /proc/meminfo | awk '{print $2}' | xargs -I {} echo "scale=4; {}/1024^2" | bc`
 		memAvail, err := exec.Command("bash", "-c", cmd).Output()
 		if err != nil {
 			logErr.Println(err)
@@ -125,13 +124,11 @@ func checkSpecialTimes(old SpecialTime, toSend chan toBeSent) SpecialTime {
 
 		var txt bytes.Buffer
 		txt.WriteString(fmt.Sprintf("Uptime: %sAvailable memory: %s GB\nCurrent load: %s", uptime[3:], memAvail[:len(load)-1], load[:len(load)-2]))
-		for _,v := range(g.c.Admins) {
+		for _, v := range g.c.Admins {
 			g.bot.Send(tgbotapi.NewMessage(v, txt.String()))
 		}
 
-
 	}
-
 
 	return current
 }
