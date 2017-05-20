@@ -77,10 +77,12 @@ func checkSpecialTimes(old SpecialTime, toSend chan toBeSent) SpecialTime {
 		// Iterate over all people
 		for _, t := range times {
 			// Iterate over all times per person
-			if t.Hours > current.Hours {
+			//if t.Hours > current.Hours {
 				// We're too far along in the array already
-				break
-			}
+			//	break
+			//}
+
+			
 			if !current.isEqualMinute(t) {
 				// The current time is not special to this person
 				continue
