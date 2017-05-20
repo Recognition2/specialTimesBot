@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
 	"time"
+	"os/exec"
+	"bytes"
 )
 
 func specialTimeWatcher() {
@@ -18,7 +20,7 @@ func specialTimeWatcher() {
 
 outer:
 	for {
-		n := 1 * time.Second // Check whether people are to be notified every n seconds
+		n := 10 * time.Second // Check whether people are to be notified every n seconds
 		t := time.After(n)
 		select {
 		case <-g.shutdown:
@@ -62,26 +64,72 @@ func checkSpecialTimes(old SpecialTime, toSend chan toBeSent) SpecialTime {
 		return old
 	}
 
+	if old.isEqualMinute(current) {
+		// This is the same minute. Nothing can be done right now.
+		return old
+	}
+
 	g.timeSubsLock.RLock()
 	defer g.timeSubsLock.RUnlock()
 
+	// Check all subscribed people whether they want to receive the current time
 	for id, times := range g.timeSubs {
-		if len(times) == 0 {
-			// No subscriptions for this person
-			continue
-		}
+		// Iterate over all people
 		for _, t := range times {
+			// Iterate over all times per person
+			if t.Hours > current.Hours {
+				// We're too far along in the array already
+				break
+			}
 			if !current.isEqualMinute(t) {
 				// The current time is not special to this person
 				continue
 			}
 
-			if old.isEqualMinute(current) {
-				// This message has already been sent
-				continue
-			}
 			toSend <- toBeSent{id: id, time: current}
+			break;
 		}
 	}
+
+	// Check whether we're taking too long
+	if d := time.Since(cTime); d > 10*time.Second {
+		logErr.Printf("Took %f seconds to loop through entire array ", d.Seconds())
+		// Sending the bot admin a warning message will probably not help
+		// if the bot is rate limited. However, try it anyway
+		for _,v := range(g.c.Admins) {
+			g.bot.Send(tgbotapi.NewMessage(v, "Checking all subscriptions took too long"))
+		}
+	}
+
+	// Check whether admins want an update
+	if current.Minutes % 30 == 0 && current.Hours > 6 {
+		// Send an update half an hour, except during the night
+		uptime, err:= exec.Command("uptime", "-p").Output()
+		if err != nil {
+			logErr.Println(err)
+		}
+
+		cmd := `grep MemTotal /proc/meminfo | awk '{print $2}' | xargs -I {} echo "scale=4; {}/1024^2" | bc`
+		memAvail, err := exec.Command("bash", "-c", cmd).Output()
+		if err != nil {
+			logErr.Println(err)
+		}
+
+		cmd = "uptime | grep -ohe 'load average[s:][: ].*' | awk '{ print $3 }'"
+		load, err := exec.Command("bash", "-c", cmd).Output()
+		if err != nil {
+			logErr.Println(err)
+		}
+
+		var txt bytes.Buffer
+		txt.WriteString(fmt.Sprintf("Uptime: %sAvailable memory: %s GB\nCurrent load: %s", uptime[3:], memAvail, load[:len(load)-2]))
+		for _,v := range(g.c.Admins) {
+			g.bot.Send(tgbotapi.NewMessage(v, txt.String()))
+		}
+
+
+	}
+
+
 	return current
 }

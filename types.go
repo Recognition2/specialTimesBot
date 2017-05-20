@@ -16,7 +16,7 @@ type global struct {
 
 type config struct {
 	Apikey string // Telegram API key
-	Admins []int  // Bot admins
+	Admins []int64  // Bot admins
 }
 
 type SpecialTime struct {

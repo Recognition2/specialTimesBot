@@ -28,6 +28,7 @@ func main() {
 	_, err := toml.DecodeFile("settings.toml", &g.c)
 	if err != nil {
 		logErr.Println(err)
+		return
 	}
 
 	// Create new bot
