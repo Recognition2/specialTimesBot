@@ -82,7 +82,7 @@ func checkSpecialTimes(old SpecialTime, toSend chan toBeSent) SpecialTime {
 			//	break
 			//}
 
-			
+
 			if !current.isEqualMinute(t) {
 				// The current time is not special to this person
 				continue
@@ -124,7 +124,7 @@ func checkSpecialTimes(old SpecialTime, toSend chan toBeSent) SpecialTime {
 		}
 
 		var txt bytes.Buffer
-		txt.WriteString(fmt.Sprintf("Uptime: %sAvailable memory: %s GB\nCurrent load: %s", uptime[3:], memAvail, load[:len(load)-2]))
+		txt.WriteString(fmt.Sprintf("Uptime: %sAvailable memory: %s GB\nCurrent load: %s", uptime[3:], memAvail[:len(load)-1], load[:len(load)-2]))
 		for _,v := range(g.c.Admins) {
 			g.bot.Send(tgbotapi.NewMessage(v, txt.String()))
 		}
