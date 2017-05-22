@@ -110,7 +110,7 @@ func checkSpecialTimes(old SpecialTime, toSend chan toBeSent) SpecialTime {
 			logErr.Println(err)
 		}
 
-		cmd := `grep MemAvail /proc/meminfo | awk '{print $2}' | xargs -I {} echo "scale=4; {}/1024^2" | bc`
+		cmd := `grep MemAvail /proc/meminfo | awk '{print $2}' | xargs -I {} echo "scale=4; {}/1024" | bc`
 		memAvail, err := exec.Command("bash", "-c", cmd).Output()
 		if err != nil {
 			logErr.Println(err)
@@ -123,7 +123,7 @@ func checkSpecialTimes(old SpecialTime, toSend chan toBeSent) SpecialTime {
 		}
 
 		var txt bytes.Buffer
-		txt.WriteString(fmt.Sprintf("Uptime: %sAvailable memory: %s GB\nCurrent load: %s", uptime[3:], memAvail[:len(load)-1], load[:len(load)-2]))
+		txt.WriteString(fmt.Sprintf("Uptime: %sAvailable memory: %s MB\nCurrent load: %s", uptime[3:], memAvail[:len(load)-1], load[:len(load)-2]))
 		for _, v := range g.c.Admins {
 			g.bot.Send(tgbotapi.NewMessage(v, txt.String()))
 		}
