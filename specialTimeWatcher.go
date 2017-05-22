@@ -110,7 +110,7 @@ func checkSpecialTimes(old SpecialTime, toSend chan toBeSent) SpecialTime {
 			logErr.Println(err)
 		}
 
-		cmd := `grep MemFree /proc/meminfo | awk '{print $2}' | xargs -I {} echo "scale=4; {}/1024^2" | bc`
+		cmd := `grep MemAvail /proc/meminfo | awk '{print $2}' | xargs -I {} echo "scale=4; {}/1024^2" | bc`
 		memAvail, err := exec.Command("bash", "-c", cmd).Output()
 		if err != nil {
 			logErr.Println(err)
