@@ -87,7 +87,12 @@ func checkSpecialTimes(old SpecialTime, toSend chan toBeSent) SpecialTime {
 				continue
 			}
 
-			toSend <- toBeSent{id: id, time: current}
+			if isAdmin(id) {
+				sendServerAnalysis(id)
+			} else {
+				toSend <- toBeSent{id: id, time: current}
+			}
+
 			break
 		}
 	}
@@ -102,33 +107,38 @@ func checkSpecialTimes(old SpecialTime, toSend chan toBeSent) SpecialTime {
 		}
 	}
 
-	// Check whether admins want an update
-	if current.Minutes%30 == 0 && current.Hours > 6 {
-		// Send an update half an hour, except during the night
-		uptime, err := exec.Command("uptime", "-p").Output()
-		if err != nil {
-			logErr.Println(err)
-		}
+	return current
+}
 
-		cmd := `grep MemAvail /proc/meminfo | awk '{print $2}' | xargs -I {} echo "scale=4; {}/1024" | bc`
-		memAvail, err := exec.Command("bash", "-c", cmd).Output()
-		if err != nil {
-			logErr.Println(err)
+func isAdmin (id int64 ) bool {
+	for _,person := range g.c.Admins {
+		if id == person {
+			return true
 		}
+	}
+	return false
+}
 
-		cmd = "uptime | grep -ohe 'load average[s:][: ].*' | awk '{ print $3 }'"
-		load, err := exec.Command("bash", "-c", cmd).Output()
-		if err != nil {
-			logErr.Println(err)
-		}
-
-		var txt bytes.Buffer
-		txt.WriteString(fmt.Sprintf("Uptime: %sAvailable memory: %s MB\nCurrent load: %s", uptime[3:], memAvail[:len(load)-1], load[:len(load)-2]))
-		for _, v := range g.c.Admins {
-			g.bot.Send(tgbotapi.NewMessage(v, txt.String()))
-		}
-
+func sendServerAnalysis (id int64) {
+	uptime, err := exec.Command("uptime", "-p").Output()
+	if err != nil {
+		logErr.Println(err)
 	}
 
-	return current
+	cmd := `grep MemAvail /proc/meminfo | awk '{print $2}' | xargs -I {} echo "scale=4; {}/1024" | bc`
+	memAvail, err := exec.Command("bash", "-c", cmd).Output()
+	if err != nil {
+		logErr.Println(err)
+	}
+
+	cmd = "uptime | grep -ohe 'load average[s:][: ].*' | awk '{ print $3 }'"
+	load, err := exec.Command("bash", "-c", cmd).Output()
+	if err != nil {
+		logErr.Println(err)
+	}
+
+	var txt bytes.Buffer
+	txt.WriteString(fmt.Sprintf("Uptime: %sAvailable memory: %s MB\nCurrent load: %s", uptime[3:], memAvail[:len(load)-1], load[:len(load)-2]))
+
+	g.bot.Send(tgbotapi.NewMessage(id, txt.String()))
 }
