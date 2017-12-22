@@ -59,7 +59,7 @@ func checkSpecialTimes(old SpecialTime, toSend chan toBeSent) SpecialTime {
 	current.Minutes = uint8(cTime.Minute())
 	current.Seconds = uint8(cTime.Second())
 
-	if current.Seconds < 10 {
+	if current.Seconds < 45 {
 		// We're not enough into this minute yet, wait a little longer
 		return old
 	}
